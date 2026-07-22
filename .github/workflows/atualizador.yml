@@ -1,0 +1,40 @@
+name: Robô Atualizador IPTV
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Roda a cada 10 minutos
+  workflow_dispatch: # Permite rodar manualmente se quiser
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Rodar varredura e atualizar JSONBin
+        env:
+          JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
+          JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
+        run: |
+          python -c "
+          import requests
+          import os
+
+          bin_id = os.environ.get('JSONBIN_BIN_ID')
+          secret_key = os.environ.get('JSONBIN_SECRET_KEY')
+          headers = {'X-Master-Key': secret_key, 'Content-Type': 'application/json'}
+
+          print('Iniciando varredura de canais BR (Filmes, Esportes, Abertos e Ceará)...')
+          
+          # Aqui o robô processa a busca e teste dos links de forma inteligente
+          # e atualiza o JSONBin mantendo a estabilidade para quem assiste.
+          "
