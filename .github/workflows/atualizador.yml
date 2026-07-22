@@ -38,21 +38,22 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura ampla em toda a rede...')
+          print('Iniciando varredura com Discovery ID incluído...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Termos da sua lista atualizada (sem Canal Brasil e Rede Brasil, com History e expansões)
+          # Termos desejados (incluindo agora Discovery ID / Investigation Discovery)
           termos_desejados = [
-              'a&e', 'amc', 'axn', 'cine brasil', 'cinemax', 'comedy central',
+              'a&e', 'amc', 'axn', 'cinemax', 'comedy central',
               'hbo', 'paramount', 'prime box', 'sony channel', 'sony movies', 'space',
               'studio universal', 'tcm', 'tnt', 'universal tv', 'usa network', 'warner',
               'adult swim', 'bandsports', 'combate', 'espn', 'fishtv', 'fuel tv', 'golf channel',
               'premiere', 'sportv', 'sportynet', 'nsports', 'xsports', 'discovery home',
-              'discovery turbo', 'discovery world', 'food network', 'gnt', 'hgtv', 'lifetime',
+              'discovery turbo', 'discovery world', 'discovery id', 'investigation discovery', ' id ',
+              'food network', 'gnt', 'hgtv', 'lifetime',
               'off', 'tlc', 'travel box', 'megapix', 'telecine', 'record', 'bandeirantes',
               'sbt', 'globo', 'cartoon network', 'dreamworks', 'gloob',
               'gulli', 'nickelodeon', 'tooncast', 'history', 'filmes', 'series', 'cinema'
@@ -91,7 +92,6 @@ jobs:
                                           'categoria': 'Geral'
                                       })
 
-                                  # Limite bem alto para trazer bastante opção
                                   if len(canais_encontrados) >= 1500:
                                       break
                   except:
