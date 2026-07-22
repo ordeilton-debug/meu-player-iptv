@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Stream Direto ID
+name: Robô Atualizador IPTV Definitivo com ID
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura com Stream Direto
+      - name: Executar Varredura e Injeção do ID
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,7 +38,7 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura e injetando Discovery ID com stream direto...')
+          print('Iniciando varredura e injetando Discovery ID fixo...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
@@ -46,7 +46,6 @@ jobs:
           ]
 
           termos_desejados = [
-              'discovery id', 'investigation discovery', 'id channel',
               'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
               'anime', 'animes', 'cartoon', 'retro', 'classics', 'classic', 'axn', 
               'hbo', 'telecine', 'megapix', 'space', 'tnt', 'paramount', 'universal', 
@@ -62,6 +61,16 @@ jobs:
           ]
 
           canais_encontrados = []
+
+          # Injeção fixa e garantida do Discovery ID no formato web/iframe compatível com o seu novo index.html
+          canal_id_fixo = {
+              'nome': 'Discovery ID (Investigation Discovery)',
+              'url': 'https://redecanaistv.asia/player3/ch.php?canal=investigacaodiscovery',
+              'categoria': 'Canais 24h e ID'
+          }
+          
+          # Coloca o Discovery ID em primeiro na lista
+          canais_encontrados.append(canal_id_fixo)
 
           try:
               for fonte in fontes_iptv:
@@ -81,14 +90,7 @@ jobs:
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  # Se achar variantes do Discovery ID nas listas públicas, joga pra frente
-                                  if 'discovery id' in nome_lower or 'investigation discovery' in nome_lower or 'id channel' in nome_lower:
-                                      canais_encontrados.insert(0, {
-                                          'nome': nome_atual,
-                                          'url': link_canal,
-                                          'categoria': 'Canais 24h e ID'
-                                      })
-                                  elif any(termo in nome_lower for termo in termos_desejados):
+                                  if any(termo in nome_lower for termo in termos_desejados):
                                       if not any(c['url'] == link_canal for c in canais_encontrados):
                                           canais_encontrados.append({
                                               'nome': nome_atual,
@@ -96,18 +98,18 @@ jobs:
                                               'categoria': 'Canais 24h e ID'
                                           })
 
-                                  if len(canais_encontrados) >= 1800:
+                                  if len(canais_encontrados) >= 1500:
                                       break
                   except:
                       pass
-                  if len(canais_encontrados) >= 1800:
+                  if len(canais_encontrados) >= 1500:
                       break
               
               if canais_encontrados:
                   payload = {'canais': canais_encontrados}
                   update_resp = requests.put(url, json=payload, headers=headers)
                   if update_resp.status_code == 200:
-                      print(f'Sucesso! {len(canais_encontrados)} canais salvos.')
+                      print(f'Sucesso! {len(canais_encontrados)} canais salvos, com o Discovery ID incluso.')
                   else:
                       print(f'Erro ao atualizar JSONBin: {update_resp.text}')
               else:
