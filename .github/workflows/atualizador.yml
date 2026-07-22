@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configurar Python
-        uses: setup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
@@ -45,11 +45,8 @@ jobs:
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Termos base, canais 24h, sequenciais e busca especial pelo Discovery ID
           termos_desejados = [
-              # Caça especial Discovery ID
               'discovery id', 'investigation discovery', 'id channel', 'id brasil',
-              # Canais de Séries, Filmes, Animes 24h e Estilo Clássico
               'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
               'anime', 'animes', 'cartoon', 'retro', 'classics', 'classic', 'axn', 
               'hbo', 'telecine', 'megapix', 'space', 'tnt', 'paramount', 'universal', 
@@ -84,7 +81,6 @@ jobs:
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  # Validação especial para pegar ID isolado corretamente ou termos da lista
                                   is_id_special = (' id ' in f' {nome_lower} ') or nome_lower.startswith('id ') or nome_lower.endswith(' id')
                                   
                                   if is_id_special or any(termo in nome_lower for termo in termos_desejados):
