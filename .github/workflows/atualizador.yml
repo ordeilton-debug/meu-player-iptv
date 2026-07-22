@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Foco Total ID e 24h
+name: Robô Atualizador IPTV Inteligente ID
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Focada
+      - name: Executar Varredura Inteligente
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,14 +38,13 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura com foco no Discovery ID e canais 24h...')
+          print('Iniciando varredura inteligente com injeção garantida do Discovery ID...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Termos desejados incluindo variações exatas do Discovery ID e canais sequenciais 24h
           termos_desejados = [
               'investigacaodiscovery', 'investigacao discovery', 'discovery id', 'id channel',
               'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
@@ -63,6 +62,17 @@ jobs:
           ]
 
           canais_encontrados = []
+
+          # Injeção fixa garantida do Discovery ID (baseado no iframe que você achou)
+          # Se o link cair, na próxima execução o robô faz varredura para atualizar
+          canal_id_fixo = {
+              'nome': 'Discovery ID (Investigation Discovery)',
+              'url': 'https://redecanaistv.asia/player3/ch.php?canal=investigacaodiscovery',
+              'categoria': 'Canais 24h e ID'
+          }
+          
+          # Garante que ele entra em primeiro na lista para você achar fácil
+          canais_encontrados.append(canal_id_fixo)
 
           try:
               for fonte in fontes_iptv:
@@ -83,11 +93,13 @@ jobs:
                                       continue
 
                                   if any(termo.replace(' ', '') in nome_lower for termo in termos_desejados):
-                                      canais_encontrados.append({
-                                          'nome': nome_atual,
-                                          'url': link_canal,
-                                          'categoria': 'Canais 24h e ID'
-                                      })
+                                      # Evita duplicar se já adicionou
+                                      if not any(c['url'] == link_canal for c in canais_encontrados):
+                                          canais_encontrados.append({
+                                              'nome': nome_atual,
+                                              'url': link_canal,
+                                              'categoria': 'Canais 24h e ID'
+                                          })
 
                                   if len(canais_encontrados) >= 1800:
                                       break
@@ -100,7 +112,7 @@ jobs:
                   payload = {'canais': canais_encontrados}
                   update_resp = requests.put(url, json=payload, headers=headers)
                   if update_resp.status_code == 200:
-                      print(f'Sucesso! {len(canais_encontrados)} canais salvos.')
+                      print(f'Sucesso! {len(canais_encontrados)} canais salvos, incluindo o Discovery ID.')
                   else:
                       print(f'Erro ao atualizar JSONBin: {update_resp.text}')
               else:
