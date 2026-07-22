@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Exata com Teste
+      - name: Executar Varredura Exata Completa
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,26 +38,22 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura com a lista exata desejada...')
+          print('Iniciando varredura rápida da lista desejada...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Lista exata de termos permitidos que você pediu
           canais_desejados = [
-              'telecine premium', 'telecine action', 'telecine touch', 'telecine fun', 
-              'telecine pipoca', 'telecine cult', 'hbo', 'hbo 2', 'hbo plus', 'hbo family', 
-              'hbo xtreme', 'cinemax', 'paramount', 'megapix', 'universal tv', 'warner channel', 
-              'space', 'tcm', 'studio universal', 'tnt', 'tnt series', 'axn', 'a&e', 
-              'sony channel', 'sony filmes', 'comedy central', 'espn', 'sportv', 'premiere', 
-              'bandsports', 'cazétv', 'cazetv', 'combate', 'conmebol', 'globo', 'sbt', 
-              'record', 'band', 'tv diario', 'tv jangadeiro', 'tv cidade', 'tv ceara', 
-              'tevê ceará', 'pluto tv'
+              'telecine', 'hbo', 'cinemax', 'paramount', 'megapix', 'universal', 
+              'warner', 'space', 'tcm', 'studio universal', 'tnt', 'axn', 'a&e', 
+              'sony', 'comedy', 'espn', 'sportv', 'premiere', 'bandsports', 
+              'cazé', 'cazetv', 'combate', 'conmebol', 'globo', 'sbt', 
+              'record', 'band', 'tv diario', 'tv jangadeiro', 'tv cidade', 
+              'tv ceara', 'tevê ceará', 'pluto tv'
           ]
 
-          # Termos proibidos para garantir que nenhum evangélico ou lixo entre
           termos_proibidos = [
               'igreja', 'assembleia', 'universal', 'evangelica', 'gospel', 'radio', 
               'padre', 'deus', 'ministerio', 'boi', 'agro', 'rural', 'arte', 'cultura'
@@ -65,18 +61,6 @@ jobs:
 
           canais_encontrados = []
           urls_vistas = set()
-
-          def testar_link(link):
-              try:
-                  resp = requests.head(link, timeout=3, allow_redirects=True)
-                  if resp.status_code < 400:
-                      return True
-                  resp_get = requests.get(link, timeout=3, stream=True)
-                  if resp_get.status_code < 400:
-                      return True
-              except:
-                  pass
-              return False
 
           try:
               for fonte in fontes_iptv:
@@ -97,48 +81,33 @@ jobs:
 
                                   nome_lower = nome_atual.lower()
 
-                                  # Bloqueia lixo estritamente
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  # Verifica se o canal faz parte exatamente da sua lista
-                                  match = False
-                                  for alvo in canais_desejados:
-                                      # Regra especial para Globo e SBT para pegar algumas opções sem exagerar
-                                      if alvo in ['globo', 'sbt', 'record', 'band']:
-                                          if alvo in nome_lower and not any(regional in nome_lower for regional in ['sp', 'rj', 'mg'] and len(nome_lower) > 15):
-                                              # Evita repetidoras muito distantes se preferir, mas aceita as principais
-                                              match = True
-                                              break
-                                      elif alvo in nome_lower:
-                                          match = True
-                                          break
+                                  if any(alvo in nome_lower for alvo in canais_desejados):
+                                      urls_vistas.add(link_canal)
+                                      canais_encontrados.append({
+                                          'nome': nome_atual,
+                                          'url': link_canal,
+                                          'categoria': 'Favoritos'
+                                      })
 
-                                  if match:
-                                      print(f'Testando canal desejado: {nome_atual}...')
-                                      if testar_link(link_canal):
-                                          urls_vistas.add(link_canal)
-                                          canais_encontrados.append({
-                                              'nome': nome_atual,
-                                              'url': link_canal,
-                                              'categoria': 'Favoritos'
-                                          })
-                                          print(f'-> APROVADO: {nome_atual}')
-                                      else:
-                                          print(f'-> FORA DO AR: {nome_atual}')
-
+                                  if len(canais_encontrados) >= 300:
+                                      break
                   except:
                       pass
+                  if len(canais_encontrados) >= 300:
+                      break
               
               if canais_encontrados:
                   payload = {'canais': canais_encontrados}
                   update_resp = requests.put(url, json=payload, headers=headers)
                   if update_resp.status_code == 200:
-                      print(f'Sucesso! {len(canais_encontrados)} canais da sua lista salvos e funcionais.')
+                      print(f'Sucesso! {len(canais_encontrados)} canais salvos no JSONBin.')
                   else:
                       print(f'Erro ao atualizar JSONBin: {update_resp.text}')
               else:
-                  print('Nenhum canal valido encontrado nesta rodada.')
+                  print('Nenhum canal encontrado.')
 
           except Exception as e:
               print(f'Erro na execucao do robo: {e}')
