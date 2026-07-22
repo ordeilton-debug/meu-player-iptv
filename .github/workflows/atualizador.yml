@@ -38,56 +38,104 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura automatica de canais BR (Filmes, Esportes, Abertos e Ceara)...')
+          print('Iniciando varredura filtrada e limpa...')
           
-          # Aqui entram fontes de listas abertas públicas da comunidade IPTV
           fontes_iptv = [
-              'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u'
+              'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
+              'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Canais de interesse solicitados
-          termos_busca = ['ESPN', 'SPORTV', 'PREMIERE', 'CAZE', 'GLOBO', 'SBT', 'RECORD', 'CEARA', 'DIARIO', 'FILMES', 'HBO', 'TELECINE', 'CINEMA']
+          # Termos indesejados para bloquear de vez (evangélicos, rádio, lixo)
+          termos_proibidos = ['igreja', 'assembleia', 'universal', 'evangelica', 'gospel', 'radio', 'padre', 'deus', 'ministerio', 'copc', 'RIT']
 
           canais_encontrados = []
+          urls_vistas = set()
+
+          # Contadores para limitar abertos comuns
+          cont_globo = 0
+          cont_sbt = 0
+          cont_record = 0
 
           try:
               for fonte in fontes_iptv:
-                  resposta = requests.get(fonte, timeout=15)
-                  if resposta.status_code == 200:
-                      linhas = resposta.text.splitlines()
-                      nome_atual = ''
-                      for linha in linhas:
-                          if linha.startswith('#EXTINF:'):
-                              if ',' in linha:
-                                  nome_atual = linha.split(',')[1].strip()
-                          elif linha.startswith('http'):
-                              link_canal = linha.strip()
-                              # Filtra apenas se corresponder aos critérios pedidos
-                              if any(termo.lower() in nome_atual.lower() for termo in termos_busca):
-                                  # Testa rapidamente se o link responde
-                                  try:
-                                      test = requests.head(link_canal, timeout=3)
-                                      if test.status_code < 400:
-                                          canais_encontrados.append({
-                                              'nome': nome_atual,
-                                              'url': link_canal,
-                                              'categoria': 'Automatico'
-                                          })
-                                  except:
-                                      pass
-                              # Limita para não sobrecarregar
-                              if len(canais_encontrados) >= 40:
-                                  break
+                  try:
+                      resposta = requests.get(fonte, timeout=15)
+                      if resposta.status_code == 200:
+                          linhas = resposta.text.splitlines()
+                          nome_atual = ''
+                          for linha in linhas:
+                              if linha.startswith('#EXTINF:'):
+                                  if ',' in linha:
+                                      nome_atual = linha.split(',')[1].strip()
+                              elif linha.startswith('http'):
+                                  link_canal = linha.strip()
+                                  
+                                  if link_canal in urls_vistas:
+                                      continue
+
+                                  nome_lower = nome_atual.lower()
+
+                                  # Se tiver termo proibido, pula fora
+                                  if any(proibido in nome_lower for proibido in termos_proibidos):
+                                      continue
+
+                                  aceitar = False
+
+                                  # 1. Regionais do Ceará (Prioridade total)
+                                  if any(ce in nome_lower for ce in ['tv diario', 'tv jangadeiro', 'tv cidade', 'tv ceara', 'diario do nordeste']):
+                                      aceitar = True
+
+                                  # 2. Filmes (Pode puxar tudo o que for de filme/24h)
+                                  elif any(filme in nome_lower for filme in ['filme', 'hbo', 'telecine', 'cinemax', 'paramount', 'megapix', 'warner', 'action', 'comedy', 'classics', 'sky', 'universal', 'studio']):
+                                      aceitar = True
+
+                                  # 3. Esportes famosos
+                                  elif any(esp in nome_lower for esp in ['espn', 'sportv', 'premiere', 'caze', 'combate', 'conmebol', 'bandsports', 'nfl', 'nba']):
+                                      aceitar = True
+
+                                  # 4. Desenhos e Animes
+                                  elif any(desenho in nome_lower for desenho in ['cartoon', 'anime', 'crunchyroll', 'disney', 'nickelodeon', 'nick', 'toon', 'boomerang', 'kirito', 'otaku']):
+                                      aceitar = True
+
+                                  # 5. Globo (Até 4 opções)
+                                  elif 'globo' in nome_lower and cont_globo < 4:
+                                      cont_globo += 1
+                                      aceitar = True
+
+                                  # 6. SBT (Até 4 opções)
+                                  elif 'sbt' in nome_lower and cont_sbt < 4:
+                                      cont_sbt += 1
+                                      aceitar = True
+
+                                  # 7. Record (Até 4 opções)
+                                  elif 'record' in nome_lower and cont_record < 4:
+                                      cont_record += 1
+                                      aceitar = True
+
+                                  if aceitar:
+                                      urls_vistas.add(link_canal)
+                                      canais_encontrados.append({
+                                          'nome': nome_atual,
+                                          'url': link_canal,
+                                          'categoria': 'Filtrado'
+                                      })
+
+                                  if len(canais_encontrados) >= 200:
+                                      break
+                  except:
+                      pass
+                  if len(canais_encontrados) >= 200:
+                      break
               
               if canais_encontrados:
                   payload = {'canais': canais_encontrados}
                   update_resp = requests.put(url, json=payload, headers=headers)
                   if update_resp.status_code == 200:
-                      print('Sucesso! JSONBin atualizado com os novos links ativos.')
+                      print(f'Sucesso! {len(canais_encontrados)} canais limpos e selecionados salvos no JSONBin.')
                   else:
                       print(f'Erro ao atualizar JSONBin: {update_resp.text}')
               else:
-                  print('Nenhum canal novo valido encontrado nesta varredura.')
+                  print('Nenhum canal valido encontrado.')
 
           except Exception as e:
               print(f'Erro na execucao do robo: {e}')
