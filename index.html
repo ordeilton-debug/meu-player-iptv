@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Player IPTV Online</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #0f1015; color: #fff; font-family: Arial, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        .player-section { flex: 2; display: flex; flex-direction: column; padding: 15px; background: #13141a; }
+        #infoAtual { font-size: 14px; color: #aaa; margin-bottom: 10px; }
+        .player-container { flex: 1; background: #000; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .video-js { width: 100% !important; height: 100% !important; }
+
+        .playlist-section { flex: 1; background: #1a1c23; border-left: 1px solid #2a2d3d; display: flex; flex-direction: column; max-width: 400px; }
+        .header-lista { padding: 15px; background: #13141a; font-weight: bold; border-bottom: 1px solid #2a2d3d; }
+        .lista-canais { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .canal-item { background: #222530; padding: 10px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        .canal-item:hover { background: #2a2d3d; }
+    </style>
+</head>
+<body>
+
+    <div class="player-section">
+        <div id="infoAtual">Selecione um canal ao lado para assistir.</div>
+        <div class="player-container">
+            <video id="meuPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto">
+                <p class="vjs-no-js">Seu navegador não suporta HTML5 video.</p>
+            </video>
+        </div>
+    </div>
+
+    <div class="playlist-section">
+        <div class="header-lista">Canais Disponíveis</div>
+        <div class="lista-canais" id="containerCanais">
+            <div style="color: #666; text-align: center; margin-top: 20px;">Carregando canais da nuvem...</div>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.js"></script>
+    <script>
+        let player = videojs('meuPlayer');
+
+        // Configuração com o ID e a Chave de acesso fornecidos
+        let binId = '6a60df4af5f4af5e29b17053';
+        let apiKey = '$2a$10$nkhtoMSSze53SGdX4zIyuuG9AQDrgqelRjxIivfNseGcbXi9OLrg6';
+        let urlJSON = `https://api.jsonbin.io/v3/b/${binId}/latest`;
+
+        async function carregarCanais() {
+            try {
+                let resposta = await fetch(urlJSON, {
+                    headers: {
+                        'X-Master-Key': apiKey
+                    }
+                });
+                let dados = await resposta.json();
+                
+                // O JSONBin costuma guardar os dados dentro da propriedade 'record'
+                let canais = dados.record || dados; 
+                
+                exibirLista(canais);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('containerCanais').innerHTML = '<div style="color: #e50914; text-align: center; margin-top: 20px;">Erro ao carregar a lista online.</div>';
+            }
+        }
+
+        function exibirLista(canais) {
+            let container = document.getElementById('containerCanais');
+            container.innerHTML = '';
+            
+            if (!Array.isArray(canais) || canais.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; margin-top: 20px;">Nenhum canal encontrado na lista.</div>';
+                return;
+            }
+
+            canais.forEach((canal, index) => {
+                let div = document.createElement('div');
+                div.className = 'canal-item';
+                div.innerText = `${index + 1}. ${canal.titulo || 'Canal ' + (index + 1)}`;
+                div.onclick = () => {
+                    document.getElementById('infoAtual').innerText = `Assistindo: ${canal.titulo}`;
+                    player.src({ type: 'application/x-mpegURL', src: canal.url });
+                    player.play();
+                };
+                container.appendChild(div);
+            });
+        }
+
+        carregarCanais();
+    </script>
+</body>
+</html>
