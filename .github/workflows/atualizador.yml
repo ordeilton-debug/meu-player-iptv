@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Focada
+      - name: Executar Varredura Focada Completa
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,14 +38,15 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura estrita...')
+          print('Iniciando varredura com Warner, Space, History, ID e Filmes...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          termos_proibidos = ['igreja', 'assembleia', 'universal', 'evangelica', 'gospel', 'radio', 'padre', 'deus', 'ministerio', 'tv diario', 'tv jangadeiro', 'tv cidade', 'tv ceara']
+          # Termos evangélicos ou lixo que queremos bloquear de vez
+          termos_proibidos = ['igreja', 'assembleia', 'universal', 'evangelica', 'gospel', 'radio', 'padre', 'deus', 'ministerio']
 
           canais_encontrados = []
           urls_vistas = set()
@@ -69,20 +70,26 @@ jobs:
 
                                   nome_lower = nome_atual.lower()
 
-                                  # Bloqueia lixo e evangélicos
+                                  # Bloqueia apenas evangélicos/lixo
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
                                   aceitar = False
 
-                                  # Filmes e Séries (foco total em 24h e fechados)
-                                  if any(filme in nome_lower for filme in ['filme', 'hbo', 'telecine', 'cinemax', 'paramount', 'megapix', 'warner', 'action', 'comedy', 'classics', 'sky', 'universal', 'studio', 'prime', 'netflix', 'apple', 'disney', 'suspense', 'terror', 'cinema']):
+                                  # 1. Filmes, Séries, Warner, Space, TCM e 24h
+                                  if any(filme in nome_lower for filme in ['filme', 'hbo', 'telecine', 'cinemax', 'paramount', 'megapix', 'warner', 'space', 'tcm', 'action', 'comedy', 'classics', 'sky', 'universal', 'studio', 'prime', 'netflix', 'apple', 'disney', 'suspense', 'terror', 'cinema']):
                                       aceitar = True
-                                  # Esportes
+                                  # 2. Documentários (History, ID Discovery, etc.)
+                                  elif any(doc in nome_lower for doc in ['history', 'discovery', 'investigation', 'id', 'natgeo', 'animal planet', 'documentario']):
+                                      aceitar = True
+                                  # 3. Esportes Famosos
                                   elif any(esp in nome_lower for esp in ['espn', 'sportv', 'premiere', 'caze', 'combate', 'conmebol', 'bandsports', 'nfl', 'nba', 'futebol', 'esporte', 'fight']):
                                       aceitar = True
-                                  # Desenhos e Animes
+                                  # 4. Desenhos e Animes
                                   elif any(desenho in nome_lower for desenho in ['cartoon', 'anime', 'crunchyroll', 'nickelodeon', 'nick', 'toon', 'boomerang', 'disney', 'toons', 'kids']):
+                                      aceitar = True
+                                  # 5. Principais Abertas (Globo, Record, SBT)
+                                  elif any(aberto in nome_lower for aberto in ['globo', 'record', 'sbt']):
                                       aceitar = True
 
                                   if aceitar:
@@ -93,11 +100,11 @@ jobs:
                                           'categoria': 'Selecionado'
                                       })
 
-                                  if len(canais_encontrados) >= 400:
+                                  if len(canais_encontrados) >= 500:
                                       break
                   except:
                       pass
-                  if len(canais_encontrados) >= 400:
+                  if len(canais_encontrados) >= 500:
                       break
               
               if canais_encontrados:
