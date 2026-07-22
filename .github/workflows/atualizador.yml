@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Lista Exata
+name: Robô Atualizador IPTV Busca Ampla
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura da Lista Exata
+      - name: Executar Varredura Ampla
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,24 +38,24 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura baseada na lista personalizada...')
+          print('Iniciando varredura ampla em toda a rede...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Lista exata extraída dos canais que você enviou
+          # Termos da sua lista atualizada (sem Canal Brasil e Rede Brasil, com History e expansões)
           termos_desejados = [
-              'a&e', 'amc', 'axn', 'canal brasil', 'cine brasil', 'cinemax', 'comedy central',
+              'a&e', 'amc', 'axn', 'cine brasil', 'cinemax', 'comedy central',
               'hbo', 'paramount', 'prime box', 'sony channel', 'sony movies', 'space',
               'studio universal', 'tcm', 'tnt', 'universal tv', 'usa network', 'warner',
               'adult swim', 'bandsports', 'combate', 'espn', 'fishtv', 'fuel tv', 'golf channel',
               'premiere', 'sportv', 'sportynet', 'nsports', 'xsports', 'discovery home',
               'discovery turbo', 'discovery world', 'food network', 'gnt', 'hgtv', 'lifetime',
               'off', 'tlc', 'travel box', 'megapix', 'telecine', 'record', 'bandeirantes',
-              'rede brasil', 'sbt', 'globo', 'cartoon network', 'dreamworks', 'gloob',
-              'gulli', 'nickelodeon', 'tooncast'
+              'sbt', 'globo', 'cartoon network', 'dreamworks', 'gloob',
+              'gulli', 'nickelodeon', 'tooncast', 'history', 'filmes', 'series', 'cinema'
           ]
 
           termos_proibidos = [
@@ -69,7 +69,7 @@ jobs:
           try:
               for fonte in fontes_iptv:
                   try:
-                      resposta = requests.get(fonte, timeout=20)
+                      resposta = requests.get(fonte, timeout=25)
                       if resposta.status_code == 200:
                           linhas = resposta.text.splitlines()
                           nome_atual = ''
@@ -88,14 +88,15 @@ jobs:
                                       canais_encontrados.append({
                                           'nome': nome_atual,
                                           'url': link_canal,
-                                          'categoria': 'Favoritos'
+                                          'categoria': 'Geral'
                                       })
 
-                                  if len(canais_encontrados) >= 900:
+                                  # Limite bem alto para trazer bastante opção
+                                  if len(canais_encontrados) >= 1500:
                                       break
                   except:
                       pass
-                  if len(canais_encontrados) >= 900:
+                  if len(canais_encontrados) >= 1500:
                       break
               
               if canais_encontrados:
