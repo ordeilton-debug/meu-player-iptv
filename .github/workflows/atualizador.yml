@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Inteligente ID
+name: Robô Atualizador IPTV Stream Direto ID
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Inteligente
+      - name: Executar Varredura com Stream Direto
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,7 +38,7 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura inteligente com injeção garantida do Discovery ID...')
+          print('Iniciando varredura e injetando Discovery ID com stream direto...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
@@ -46,7 +46,7 @@ jobs:
           ]
 
           termos_desejados = [
-              'investigacaodiscovery', 'investigacao discovery', 'discovery id', 'id channel',
+              'discovery id', 'investigation discovery', 'id channel',
               'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
               'anime', 'animes', 'cartoon', 'retro', 'classics', 'classic', 'axn', 
               'hbo', 'telecine', 'megapix', 'space', 'tnt', 'paramount', 'universal', 
@@ -63,17 +63,6 @@ jobs:
 
           canais_encontrados = []
 
-          # Injeção fixa garantida do Discovery ID (baseado no iframe que você achou)
-          # Se o link cair, na próxima execução o robô faz varredura para atualizar
-          canal_id_fixo = {
-              'nome': 'Discovery ID (Investigation Discovery)',
-              'url': 'https://redecanaistv.asia/player3/ch.php?canal=investigacaodiscovery',
-              'categoria': 'Canais 24h e ID'
-          }
-          
-          # Garante que ele entra em primeiro na lista para você achar fácil
-          canais_encontrados.append(canal_id_fixo)
-
           try:
               for fonte in fontes_iptv:
                   try:
@@ -87,13 +76,19 @@ jobs:
                                       nome_atual = linha.split(',')[1].strip()
                               elif linha.startswith('http'):
                                   link_canal = linha.strip()
-                                  nome_lower = nome_atual.lower().replace(' ', '')
+                                  nome_lower = nome_atual.lower()
 
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  if any(termo.replace(' ', '') in nome_lower for termo in termos_desejados):
-                                      # Evita duplicar se já adicionou
+                                  # Se achar variantes do Discovery ID nas listas públicas, joga pra frente
+                                  if 'discovery id' in nome_lower or 'investigation discovery' in nome_lower or 'id channel' in nome_lower:
+                                      canais_encontrados.insert(0, {
+                                          'nome': nome_atual,
+                                          'url': link_canal,
+                                          'categoria': 'Canais 24h e ID'
+                                      })
+                                  elif any(termo in nome_lower for termo in termos_desejados):
                                       if not any(c['url'] == link_canal for c in canais_encontrados):
                                           canais_encontrados.append({
                                               'nome': nome_atual,
@@ -112,7 +107,7 @@ jobs:
                   payload = {'canais': canais_encontrados}
                   update_resp = requests.put(url, json=payload, headers=headers)
                   if update_resp.status_code == 200:
-                      print(f'Sucesso! {len(canais_encontrados)} canais salvos, incluindo o Discovery ID.')
+                      print(f'Sucesso! {len(canais_encontrados)} canais salvos.')
                   else:
                       print(f'Erro ao atualizar JSONBin: {update_resp.text}')
               else:
