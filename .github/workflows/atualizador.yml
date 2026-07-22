@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Busca Ampla
+name: Robô Atualizador IPTV Canais 24h e ID
 
 on:
   schedule:
@@ -13,14 +13,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configurar Python
-        uses: actions/setup-python@v4
+        uses: setup-python@v4
         with:
           python-version: '3.10'
 
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Ampla
+      - name: Executar Varredura Especial 24h e ID
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,25 +38,24 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura com Discovery ID incluído...')
+          print('Iniciando varredura focada em 24h (Séries/Filmes/Animes) e caça ao Discovery ID...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Termos desejados (incluindo agora Discovery ID / Investigation Discovery)
+          # Termos base, canais 24h, sequenciais e busca especial pelo Discovery ID
           termos_desejados = [
-              'a&e', 'amc', 'axn', 'cinemax', 'comedy central',
-              'hbo', 'paramount', 'prime box', 'sony channel', 'sony movies', 'space',
-              'studio universal', 'tcm', 'tnt', 'universal tv', 'usa network', 'warner',
-              'adult swim', 'bandsports', 'combate', 'espn', 'fishtv', 'fuel tv', 'golf channel',
-              'premiere', 'sportv', 'sportynet', 'nsports', 'xsports', 'discovery home',
-              'discovery turbo', 'discovery world', 'discovery id', 'investigation discovery', ' id ',
-              'food network', 'gnt', 'hgtv', 'lifetime',
-              'off', 'tlc', 'travel box', 'megapix', 'telecine', 'record', 'bandeirantes',
-              'sbt', 'globo', 'cartoon network', 'dreamworks', 'gloob',
-              'gulli', 'nickelodeon', 'tooncast', 'history', 'filmes', 'series', 'cinema'
+              # Caça especial Discovery ID
+              'discovery id', 'investigation discovery', 'id channel', 'id brasil',
+              # Canais de Séries, Filmes, Animes 24h e Estilo Clássico
+              'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
+              'anime', 'animes', 'cartoon', 'retro', 'classics', 'classic', 'axn', 
+              'hbo', 'telecine', 'megapix', 'space', 'tnt', 'paramount', 'universal', 
+              'warner', 'sony', 'comedy', 'amc', 'cinemax', 'history', 'discovery',
+              'gnt', 'tlc', 'lifetime', 'espn', 'sportv', 'premiere', 'combate', 
+              'globo', 'sbt', 'record', 'band', 'punho', 'acao', 'comedia'
           ]
 
           termos_proibidos = [
@@ -85,18 +84,21 @@ jobs:
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  if any(termo in nome_lower for termo in termos_desejados):
+                                  # Validação especial para pegar ID isolado corretamente ou termos da lista
+                                  is_id_special = (' id ' in f' {nome_lower} ') or nome_lower.startswith('id ') or nome_lower.endswith(' id')
+                                  
+                                  if is_id_special or any(termo in nome_lower for termo in termos_desejados):
                                       canais_encontrados.append({
                                           'nome': nome_atual,
                                           'url': link_canal,
-                                          'categoria': 'Geral'
+                                          'categoria': '24h e Especiais'
                                       })
 
-                                  if len(canais_encontrados) >= 1500:
+                                  if len(canais_encontrados) >= 1800:
                                       break
                   except:
                       pass
-                  if len(canais_encontrados) >= 1500:
+                  if len(canais_encontrados) >= 1800:
                       break
               
               if canais_encontrados:
