@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Focada Completa
+      - name: Executar Varredura Permissiva
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,14 +38,14 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura com Warner, Space, History, ID e Filmes...')
+          print('Iniciando varredura ampla de canais brasileiros...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
-          # Termos evangélicos ou lixo que queremos bloquear de vez
+          # Apenas o que é estritamente proibido (evangélicos e rádios)
           termos_proibidos = ['igreja', 'assembleia', 'universal', 'evangelica', 'gospel', 'radio', 'padre', 'deus', 'ministerio']
 
           canais_encontrados = []
@@ -70,41 +70,24 @@ jobs:
 
                                   nome_lower = nome_atual.lower()
 
-                                  # Bloqueia apenas evangélicos/lixo
+                                  # Se for evangélico ou rádio, pula fora
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  aceitar = False
+                                  # Aceita praticamente tudo do Brasil, pois limpa o lixo evangélico
+                                  urls_vistas.add(link_canal)
+                                  canais_encontrados.append({
+                                      'nome': nome_atual,
+                                      'url': link_canal,
+                                      'categoria': 'Geral'
+                                  })
 
-                                  # 1. Filmes, Séries, Warner, Space, TCM e 24h
-                                  if any(filme in nome_lower for filme in ['filme', 'hbo', 'telecine', 'cinemax', 'paramount', 'megapix', 'warner', 'space', 'tcm', 'action', 'comedy', 'classics', 'sky', 'universal', 'studio', 'prime', 'netflix', 'apple', 'disney', 'suspense', 'terror', 'cinema']):
-                                      aceitar = True
-                                  # 2. Documentários (History, ID Discovery, etc.)
-                                  elif any(doc in nome_lower for doc in ['history', 'discovery', 'investigation', 'id', 'natgeo', 'animal planet', 'documentario']):
-                                      aceitar = True
-                                  # 3. Esportes Famosos
-                                  elif any(esp in nome_lower for esp in ['espn', 'sportv', 'premiere', 'caze', 'combate', 'conmebol', 'bandsports', 'nfl', 'nba', 'futebol', 'esporte', 'fight']):
-                                      aceitar = True
-                                  # 4. Desenhos e Animes
-                                  elif any(desenho in nome_lower for desenho in ['cartoon', 'anime', 'crunchyroll', 'nickelodeon', 'nick', 'toon', 'boomerang', 'disney', 'toons', 'kids']):
-                                      aceitar = True
-                                  # 5. Principais Abertas (Globo, Record, SBT)
-                                  elif any(aberto in nome_lower for aberto in ['globo', 'record', 'sbt']):
-                                      aceitar = True
-
-                                  if aceitar:
-                                      urls_vistas.add(link_canal)
-                                      canais_encontrados.append({
-                                          'nome': nome_atual,
-                                          'url': link_canal,
-                                          'categoria': 'Selecionado'
-                                      })
-
-                                  if len(canais_encontrados) >= 500:
+                                  # Permite coletar até 600 canais variados
+                                  if len(canais_encontrados) >= 600:
                                       break
                   except:
                       pass
-                  if len(canais_encontrados) >= 500:
+                  if len(canais_encontrados) >= 600:
                       break
               
               if canais_encontrados:
