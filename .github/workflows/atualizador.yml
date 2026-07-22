@@ -1,4 +1,4 @@
-name: Robô Atualizador IPTV Canais 24h e ID
+name: Robô Atualizador IPTV Foco Total ID e 24h
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Executar Varredura Especial 24h e ID
+      - name: Executar Varredura Focada
         env:
           JSONBIN_BIN_ID: "${{ secrets.JSONBIN_BIN_ID }}"
           JSONBIN_SECRET_KEY: "${{ secrets.JSONBIN_SECRET_KEY }}"
@@ -38,21 +38,22 @@ jobs:
               'Content-Type': 'application/json'
           }
 
-          print('Iniciando varredura focada em 24h (Séries/Filmes/Animes) e caça ao Discovery ID...')
+          print('Iniciando varredura com foco no Discovery ID e canais 24h...')
           
           fontes_iptv = [
               'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u',
               'https://raw.githubusercontent.com/FunctionError/PPV/main/iptv.m3u'
           ]
 
+          # Termos desejados incluindo variações exatas do Discovery ID e canais sequenciais 24h
           termos_desejados = [
-              'discovery id', 'investigation discovery', 'id channel', 'id brasil',
+              'investigacaodiscovery', 'investigacao discovery', 'discovery id', 'id channel',
               'tv series', 'series', '24h', 'maratona', 'pluto', 'filmes', 'cinema', 
               'anime', 'animes', 'cartoon', 'retro', 'classics', 'classic', 'axn', 
               'hbo', 'telecine', 'megapix', 'space', 'tnt', 'paramount', 'universal', 
               'warner', 'sony', 'comedy', 'amc', 'cinemax', 'history', 'discovery',
               'gnt', 'tlc', 'lifetime', 'espn', 'sportv', 'premiere', 'combate', 
-              'globo', 'sbt', 'record', 'band', 'punho', 'acao', 'comedia'
+              'globo', 'sbt', 'record', 'band'
           ]
 
           termos_proibidos = [
@@ -76,18 +77,16 @@ jobs:
                                       nome_atual = linha.split(',')[1].strip()
                               elif linha.startswith('http'):
                                   link_canal = linha.strip()
-                                  nome_lower = nome_atual.lower()
+                                  nome_lower = nome_atual.lower().replace(' ', '')
 
                                   if any(proibido in nome_lower for proibido in termos_proibidos):
                                       continue
 
-                                  is_id_special = (' id ' in f' {nome_lower} ') or nome_lower.startswith('id ') or nome_lower.endswith(' id')
-                                  
-                                  if is_id_special or any(termo in nome_lower for termo in termos_desejados):
+                                  if any(termo.replace(' ', '') in nome_lower for termo in termos_desejados):
                                       canais_encontrados.append({
                                           'nome': nome_atual,
                                           'url': link_canal,
-                                          'categoria': '24h e Especiais'
+                                          'categoria': 'Canais 24h e ID'
                                       })
 
                                   if len(canais_encontrados) >= 1800:
